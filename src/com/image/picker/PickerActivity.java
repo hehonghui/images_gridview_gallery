@@ -74,7 +74,6 @@ public class PickerActivity extends FragmentActivity {
                 Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_main, null);
             mGridView = (GridView) rootView.findViewById(R.id.gridview);
-            // scanImages();
             new ImageScanner(getActivity()).setCallback(new ImageCallback() {
 
                 @Override
