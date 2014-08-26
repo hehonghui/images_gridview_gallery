@@ -48,7 +48,7 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ImageView;
 
 import com.example.imagepicker.R;
-import com.image.picker.LocalImageLoader.ImageCallBack;
+import com.image.picker.CommonImageLoader.ImageCallBack;
 import com.image.picker.SquareImageView.OnMeasureListener;
 
 import java.util.ArrayList;
@@ -153,7 +153,7 @@ public class ImageAdapter extends BaseAdapter {
         // mImageViewSize.y);
 
         // 利用NativeImageLoader类加载本地图片
-        Bitmap bitmap = LocalImageLoader.getInstance().displatImage(imagePath,
+        Bitmap bitmap = CommonImageLoader.getInstance().displatImage(imagePath,
                 viewHolder.imageView.getImageSize(), new ImageCallBack() {
                     @Override
                     public void onImageLoaded(Bitmap bitmap, String path) {

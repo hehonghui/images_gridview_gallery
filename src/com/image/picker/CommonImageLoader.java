@@ -50,7 +50,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 
  * @author likebamboo
  */
-public class LocalImageLoader {
+public class CommonImageLoader {
     /**
      * 内存Lru缓存
      */
@@ -59,7 +59,7 @@ public class LocalImageLoader {
     /**
      * 单例
      */
-    private static LocalImageLoader mInstance = new LocalImageLoader();
+    private static CommonImageLoader mInstance = new CommonImageLoader();
 
     /**
      * 创建一个固定线程数的线程池
@@ -81,7 +81,7 @@ public class LocalImageLoader {
      */
     private boolean onDispath = false;
 
-    private LocalImageLoader() {
+    private CommonImageLoader() {
     }
 
     /**
@@ -89,7 +89,7 @@ public class LocalImageLoader {
      * 
      * @return
      */
-    public static LocalImageLoader getInstance() {
+    public static CommonImageLoader getInstance() {
         return mInstance;
     }
 
@@ -320,12 +320,12 @@ public class LocalImageLoader {
      * @author mrsimple
      */
     private static class ImageHandler extends Handler {
-        private final WeakReference<LocalImageLoader> mActivity;
+        private final WeakReference<CommonImageLoader> mActivity;
 
         private final WeakReference<ImageLoadRequest> mRequest;
 
-        public ImageHandler(LocalImageLoader activity, ImageLoadRequest request) {
-            mActivity = new WeakReference<LocalImageLoader>(activity);
+        public ImageHandler(CommonImageLoader activity, ImageLoadRequest request) {
+            mActivity = new WeakReference<CommonImageLoader>(activity);
             mRequest = new WeakReference<ImageLoadRequest>(request);
         }
 
@@ -333,7 +333,7 @@ public class LocalImageLoader {
         public void handleMessage(Message msg) {
             ImageLoadRequest request = mRequest.get();
             if (request != null) {
-                LocalImageLoader activity = mActivity.get();
+                CommonImageLoader activity = mActivity.get();
                 if (activity != null) {
                     activity.removeImageRequest(request);
                 }

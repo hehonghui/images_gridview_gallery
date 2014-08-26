@@ -29,9 +29,9 @@ public class ImageLoadRequest {
     /**
      * 加载图片后回调
      */
-    private LocalImageLoader.ImageCallBack mCallBack = null;
+    private CommonImageLoader.ImageCallBack mCallBack = null;
 
-    public ImageLoadRequest(String mPath, Point mSize, LocalImageLoader.ImageCallBack mCallBack) {
+    public ImageLoadRequest(String mPath, Point mSize, CommonImageLoader.ImageCallBack mCallBack) {
         this.mPath = mPath;
         this.mSize = mSize;
         this.mCallBack = mCallBack;
@@ -49,11 +49,11 @@ public class ImageLoadRequest {
         this.mSize = size;
     }
 
-    public LocalImageLoader.ImageCallBack getCallBack() {
+    public CommonImageLoader.ImageCallBack getCallBack() {
         return mCallBack;
     }
 
-    public void setCallBack(LocalImageLoader.ImageCallBack callBack) {
+    public void setCallBack(CommonImageLoader.ImageCallBack callBack) {
         this.mCallBack = callBack;
     }
 
