@@ -135,7 +135,7 @@ public class CommonImageLoader {
         mImagesList.add(item);
         // 如果当前不处于调度状态，开始调度
         if (!onDispath) {
-            dispatch();
+            dispatchRequest();
         }
     }
 
@@ -150,7 +150,7 @@ public class CommonImageLoader {
         }
         mImagesList.remove(item);
         if (mImagesList.size() > 0) {
-            dispatch();
+            dispatchRequest();
         } else {
             // 没有请求了，中止调度
             onDispath = false;
@@ -160,7 +160,7 @@ public class CommonImageLoader {
     /**
      * 任务调度
      */
-    private void dispatch() {
+    private void dispatchRequest() {
         // 开始调度
         onDispath = true;
         // 如果当前线程池已满 ,不再处理请求任务
