@@ -36,69 +36,123 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.provider.MediaStore;
-import android.util.Log;
+import android.text.TextUtils;
 import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ImageScanner extends Thread {
+/**
+ * 本地图片扫描类
+ * 
+ * @author mrsimple
+ */
+public class ImageScanner extends AsyncTask<Void, Void, List<String>> {
 
     List<String> mImages = new ArrayList<String>();
 
     ImageCallback mCallback;
 
-    public static final int MSG = 123;
     Context mContext;
-    Handler mHandler ;
 
-    public ImageScanner(Context context , Handler handler) {
+    public ImageScanner(Context context) {
         mContext = context;
-        mHandler = handler ;
     }
 
+    /**
+     * @param callback
+     * @return
+     */
     public ImageScanner setCallback(ImageCallback callback) {
-        mCallback = callback;
+        this.mCallback = callback;
         return this;
     }
 
+    // @Override
+    // public void run() {
+    // if
+    // (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
+    // {
+    // Toast.makeText(mContext, "no sdcard", Toast.LENGTH_SHORT).show();
+    // return;
+    // }
+    //
+    // Uri mImageUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+    // ContentResolver mContentResolver = mContext.getContentResolver();
+    //
+    // // ֻ��ѯjpeg��png��ͼƬ
+    // Cursor mCursor = mContentResolver.query(mImageUri, null,
+    // MediaStore.Images.Media.MIME_TYPE + "=? or "
+    // + MediaStore.Images.Media.MIME_TYPE + "=?",
+    // new String[] {
+    // "image/jpeg", "image/png"
+    // }, MediaStore.Images.Media.DATE_MODIFIED);
+    //
+    // while (mCursor.moveToNext()) {
+    // // ��ȡͼƬ��·��
+    // String path = mCursor.getString(mCursor
+    // .getColumnIndex(MediaStore.Images.Media.DATA));
+    // mImages.add(path);
+    // }
+    // mCursor.close();
+    // Log.d(getName(), "#### ggggggg") ;
+    //
+    // Message msg = mHandler.obtainMessage(MSG);
+    // msg.what = MSG ;
+    // msg.obj = mImages;
+    // mHandler.sendMessage(msg);
+    // }
+
     @Override
-    public void run() {
+    protected void onPreExecute() {
         if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
             Toast.makeText(mContext, "no sdcard", Toast.LENGTH_SHORT).show();
             return;
         }
+    }
 
+    @Override
+    protected List<String> doInBackground(Void... params) {
         Uri mImageUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
         ContentResolver mContentResolver = mContext.getContentResolver();
+        final String[] columns = {
+                MediaStore.Images.Media.DATA, MediaStore.Images.Media._ID
+        };
+        final String orderBy = MediaStore.Images.Media.DATE_TAKEN;
 
-        // ֻ��ѯjpeg��png��ͼƬ
-        Cursor mCursor = mContentResolver.query(mImageUri, null,
+        // 查询
+        Cursor mCursor = mContentResolver.query(mImageUri, columns,
                 MediaStore.Images.Media.MIME_TYPE + "=? or "
                         + MediaStore.Images.Media.MIME_TYPE + "=?",
                 new String[] {
                         "image/jpeg", "image/png"
-                }, MediaStore.Images.Media.DATE_MODIFIED);
+                }, orderBy + " DESC");
 
         while (mCursor.moveToNext()) {
-            // ��ȡͼƬ��·��
             String path = mCursor.getString(mCursor
                     .getColumnIndex(MediaStore.Images.Media.DATA));
-            mImages.add(path);
+            if (!TextUtils.isEmpty(path)) {
+                mImages.add(path);
+            }
         }
-        mCursor.close();
-        Log.d(getName(), "#### ggggggg") ;
 
-        Message msg = mHandler.obtainMessage(MSG);
-        msg.what = MSG ;
-        msg.obj = mImages;
-        mHandler.sendMessage(msg);
+        mCursor.close();
+        return mImages;
     }
 
+    @Override
+    protected void onPostExecute(List<String> result) {
+        if (mCallback != null) {
+            mCallback.onComplete(mImages);
+        }
+    }
+
+    /**
+     * @author mrsimple
+     */
     static interface ImageCallback {
         public void onComplete(List<String> imgLists);
     }

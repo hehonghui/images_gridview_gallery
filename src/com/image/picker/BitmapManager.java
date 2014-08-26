@@ -37,15 +37,15 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Message;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.ImageView;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.ref.SoftReference;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
@@ -60,36 +60,33 @@ public enum BitmapManager {
     /**
      * 
      */
-    private final Map<String, SoftReference<Bitmap>> cache;
+    private final ImageCache cache = new ImageCache();
     /**
      * 
      */
-    private final ExecutorService pool;
+    private final ExecutorService mThreadPool;
     /**
      * 
      */
     private Map<ImageView, String> imageViews = Collections
             .synchronizedMap(new WeakHashMap<ImageView, String>());
+    /**
+     * 
+     */
     private Bitmap placeholder;
 
     /**
      * 
      */
     private BitmapManager() {
-        cache = new HashMap<String, SoftReference<Bitmap>>();
-        pool = Executors.newFixedThreadPool(5);
+        mThreadPool = Executors.newFixedThreadPool(5);
     }
 
+    /**
+     * @param bmp
+     */
     public void setPlaceholder(Bitmap bmp) {
         placeholder = bmp;
-    }
-
-    public Bitmap getBitmapFromCache(String url) {
-        if (cache.containsKey(url)) {
-            return cache.get(url).get();
-        }
-
-        return null;
     }
 
     @SuppressLint("HandlerLeak")
@@ -100,7 +97,7 @@ public enum BitmapManager {
             @Override
             public void handleMessage(Message msg) {
                 String tag = imageViews.get(imageView);
-                if (tag != null && tag.equals(url)) {
+                if (!TextUtils.isEmpty(tag) && tag.equals(url)) {
                     if (msg.obj != null) {
                         imageView.setImageBitmap((Bitmap) msg.obj);
                     } else {
@@ -111,11 +108,11 @@ public enum BitmapManager {
             }
         };
 
-        pool.submit(new Runnable() {
+        mThreadPool.submit(new Runnable() {
             @Override
             public void run() {
                 Bitmap bmp = null;
-                if (url.startsWith("http") || url.startsWith("https")) {
+                if (isUrlImage(url)) {
                     bmp = downloadBitmap(url, width, height);
                 } else {
                     bmp = decodeBitmapFromFile(url, width, height);
@@ -130,6 +127,16 @@ public enum BitmapManager {
     }
 
     /**
+     * 是否是网络图片
+     * 
+     * @param url
+     * @return
+     */
+    private boolean isUrlImage(String url) {
+        return url.startsWith("http") || url.startsWith("https");
+    }
+
+    /**
      * @param url
      * @param imageView
      * @param width
@@ -138,7 +145,7 @@ public enum BitmapManager {
     public void loadBitmap(final String url, final ImageView imageView,
             final int width, final int height) {
         imageViews.put(imageView, url);
-        Bitmap bitmap = getBitmapFromCache(url);
+        Bitmap bitmap = cache.get(url);
 
         // check in UI thread, so no concurrency issues
         if (bitmap != null) {
@@ -165,7 +172,9 @@ public enum BitmapManager {
         options.inSampleSize = computeSmallSize(options, viewWidth, viewHeight);
         options.inJustDecodeBounds = false;
 
-        return BitmapFactory.decodeFile(path, options);
+        Bitmap bmp = BitmapFactory.decodeFile(path, options);
+        cache.put(path, bmp);
+        return bmp;
     }
 
     /**
@@ -203,7 +212,7 @@ public enum BitmapManager {
             Bitmap bitmap = BitmapFactory.decodeStream((InputStream) new URL(
                     url).getContent());
             bitmap = Bitmap.createScaledBitmap(bitmap, width, height, true);
-            cache.put(url, new SoftReference<Bitmap>(bitmap));
+            cache.put(url, bitmap);
             return bitmap;
         } catch (MalformedURLException e) {
             e.printStackTrace();
