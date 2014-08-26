@@ -32,19 +32,21 @@
 
 package com.image.picker;
 
-import android.R.integer;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.widget.ImageView;
 
-public class SImageView extends ImageView {
+public class SquareImageView extends ImageView {
+    /**
+     * 
+     */
     public OnMeasureListener mListener;
 
-    public SImageView(Context context, AttributeSet attrs) {
+    public SquareImageView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public SImageView(Context context, AttributeSet attrs, int style) {
+    public SquareImageView(Context context, AttributeSet attrs, int style) {
         super(context, attrs, style);
     }
 
@@ -60,7 +62,7 @@ public class SImageView extends ImageView {
     /**
      * @author mrsimple
      */
-    static interface OnMeasureListener {
+    public static interface OnMeasureListener {
         public void onMeasureDone(int width, int height);
     }
 }

@@ -1,14 +1,50 @@
+/**
+ *
+ *	created by Mr.Simple, Aug 26, 20141:13:19 PM.
+ *	Copyright (c) 2014, hehonghui@umeng.com All Rights Reserved.
+ *
+ *                #####################################################
+ *                #                                                   #
+ *                #                       _oo0oo_                     #   
+ *                #                      o8888888o                    #
+ *                #                      88" . "88                    #
+ *                #                      (| -_- |)                    #
+ *                #                      0\  =  /0                    #   
+ *                #                    ___/`---'\___                  #
+ *                #                  .' \\|     |# '.                 #
+ *                #                 / \\|||  :  |||# \                #
+ *                #                / _||||| -:- |||||- \              #
+ *                #               |   | \\\  -  #/ |   |              #
+ *                #               | \_|  ''\---/''  |_/ |             #
+ *                #               \  .-\__  '-'  ___/-. /             #
+ *                #             ___'. .'  /--.--\  `. .'___           #
+ *                #          ."" '<  `.___\_<|>_/___.' >' "".         #
+ *                #         | | :  `- \`.;`\ _ /`;.`/ - ` : | |       #
+ *                #         \  \ `_.   \_ __\ /__ _/   .-` /  /       #
+ *                #     =====`-.____`.___ \_____/___.-`___.-'=====    #
+ *                #                       `=---='                     #
+ *                #     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   #
+ *                #                                                   #
+ *                #               佛祖保佑         永无BUG              #
+ *                #                                                   #
+ *                #####################################################
+ */
 
 package com.image.picker;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Point;
 import android.os.Handler;
 import android.os.Message;
-import android.support.v4.util.LruCache;
+import android.text.TextUtils;
+import android.util.Log;
 import android.widget.ImageView;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -18,126 +54,114 @@ import java.util.concurrent.Executors;
 /**
  * @author mrsimple
  */
-public class UImageLoader {
-    private LruCache<String, Bitmap> mMemoryCache;
+public enum UImageLoader {
+    INSTANCE;
+
     /**
      * 
      */
-    private static UImageLoader mInstance = new UImageLoader();
+    private final ImageCache cache = new ImageCache();
     /**
      * 
      */
-    private ExecutorService mImageThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime()
-            .availableProcessors());
+    private final ExecutorService mThreadPool;
     /**
      * 
      */
-    private Map<ImageView, String> mImageViewMap = Collections
+    private Map<ImageView, String> imageViews = Collections
             .synchronizedMap(new WeakHashMap<ImageView, String>());
+    /**
+     * 
+     */
+    private Bitmap placeholder;
 
     /**
      * 
      */
     private UImageLoader() {
-        // 计算可使用的最大内存
-        final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
-
-        // 取四分之一的可用内存作为缓存
-        final int cacheSize = maxMemory / 4;
-        mMemoryCache = new LruCache<String, Bitmap>(cacheSize) {
-
-            // 获取图片的大小
-            @Override
-            protected int sizeOf(String key, Bitmap bitmap) {
-                return bitmap.getRowBytes() * bitmap.getHeight() / 1024;
-            }
-        };
+        mThreadPool = Executors.newFixedThreadPool(5);
     }
 
     /**
-     * get the singleton
-     * 
-     * @return
+     * @param bmp
      */
-    public static UImageLoader getInstance() {
-        return mInstance;
+    public void setPlaceholder(Bitmap bmp) {
+        placeholder = bmp;
     }
 
     /**
-     * @param path
-     * @param mCallBack
-     * @return
-     */
-    public Bitmap displayImage(ImageView imageView, final String path,
-            final OnImageLoadListener mCallBack) {
-        return this.displayImage(imageView, path, null, mCallBack);
-    }
-
-    /**
-     * @param path
-     * @param mPoint
-     * @param mCallBack
-     * @return
+     * @param url
+     * @param imageView
+     * @param width
+     * @param height
      */
     @SuppressLint("HandlerLeak")
-    public Bitmap displayImage(final ImageView imageView, final String path, final Point mPoint,
-            final OnImageLoadListener mCallBack) {
-        // 从缓存中获取图片
-        Bitmap bitmap = getBitmapFromMemCache(path);
-        mImageViewMap.put(imageView, path);
-        final Handler mHander = new Handler() {
-
+    public void queueJob(final String url, final ImageView imageView,
+            final int width, final int height) {
+        /* Create handler in UI thread. */
+        final Handler handler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
-                super.handleMessage(msg);
-                mCallBack.onImageLoaded(imageView, (Bitmap) msg.obj, path);
-            }
-
-        };
-        // the bitmap has not cache in the lrucache, and then decode it from
-        // file
-        if (bitmap == null) {
-            mImageThreadPool.execute(new Runnable() {
-
-                @Override
-                public void run() {
-                    //
-                    Bitmap mBitmap = decodeThumbBitmapForFile(path,
-                            mPoint == null ? 200 : mPoint.x,
-                            mPoint == null ? 200 : mPoint.y);
-                    Message msg = mHander.obtainMessage();
-                    msg.obj = mBitmap;
-                    mHander.sendMessage(msg);
-
-                    //
-                    addBitmapToMemoryCache(path, mBitmap);
+                String tag = imageViews.get(imageView);
+                // 放置图片错位问题
+                if (!TextUtils.isEmpty(tag) && tag.equals(url)) {
+                    if (msg.obj != null) {
+                        imageView.setImageBitmap((Bitmap) msg.obj);
+                    } else {
+                        imageView.setImageBitmap(placeholder);
+                        Log.d(null, "fail " + url);
+                    }
                 }
-            });
-        }
-        return bitmap;
+            }
+        };
 
+        mThreadPool.submit(new Runnable() {
+            @Override
+            public void run() {
+                Bitmap bmp = null;
+                if (isUrlImage(url)) {
+                    bmp = downloadBitmap(url, width, height);
+                } else {
+                    bmp = decodeBitmapFromFile(url, width, height);
+                }
+                Message message = Message.obtain();
+                message.obj = bmp;
+                Log.d(null, "GET IMAGE : " + url);
+
+                handler.sendMessage(message);
+            }
+        });
     }
 
     /**
-     * 将图片存入缓存中
+     * 是否是网络图片
      * 
-     * @param key
-     * @param bitmap
-     */
-    private void addBitmapToMemoryCache(String key, Bitmap bitmap) {
-        if (getBitmapFromMemCache(key) == null && bitmap != null) {
-            mMemoryCache.put(key, bitmap);
-        }
-    }
-
-    /**
-     * 从缓存中获取图片
-     * 
-     * @param key
+     * @param url
      * @return
      */
-    private Bitmap getBitmapFromMemCache(String key) {
-        return mMemoryCache.get(key);
+    private boolean isUrlImage(String url) {
+        return url.startsWith("http") || url.startsWith("https");
+    }
+
+    /**
+     * @param url
+     * @param imageView
+     * @param width
+     * @param height
+     */
+    public void displayBitmap(final String url, final ImageView imageView,
+            final int width, final int height) {
+        imageViews.put(imageView, url);
+        Bitmap bitmap = cache.get(url);
+
+        // check in UI thread, so no concurrency issues
+        if (bitmap != null) {
+            Log.d(null, "Item loaded from cache: " + url);
+            imageView.setImageBitmap(bitmap);
+        } else {
+            imageView.setImageBitmap(placeholder);
+            queueJob(url, imageView, width, height);
+        }
     }
 
     /**
@@ -148,14 +172,16 @@ public class UImageLoader {
      * @param viewHeight
      * @return
      */
-    private Bitmap decodeThumbBitmapForFile(String path, int viewWidth, int viewHeight) {
+    private Bitmap decodeBitmapFromFile(String path, int viewWidth, int viewHeight) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(path, options);
-        options.inSampleSize = computeScale(options, viewWidth, viewHeight);
+        options.inSampleSize = computeSmallSize(options, viewWidth, viewHeight);
         options.inJustDecodeBounds = false;
 
-        return BitmapFactory.decodeFile(path, options);
+        Bitmap bmp = BitmapFactory.decodeFile(path, options);
+        cache.put(path, bmp);
+        return bmp;
     }
 
     /**
@@ -163,7 +189,7 @@ public class UImageLoader {
      * @param width
      * @param height
      */
-    private int computeScale(BitmapFactory.Options options, int viewWidth, int viewHeight) {
+    private int computeSmallSize(BitmapFactory.Options options, int viewWidth, int viewHeight) {
         int inSampleSize = 1;
         if (viewWidth == 0 || viewWidth == 0) {
             return inSampleSize;
@@ -171,29 +197,37 @@ public class UImageLoader {
         int bitmapWidth = options.outWidth;
         int bitmapHeight = options.outHeight;
 
-        // ����Bitmap�Ŀ�Ȼ�߶ȴ��������趨ͼƬ��View�Ŀ�ߣ���������ű���
         if (bitmapWidth > viewWidth || bitmapHeight > viewWidth) {
             int widthScale = Math.round((float) bitmapWidth / (float) viewWidth);
             int heightScale = Math.round((float) bitmapHeight / (float) viewWidth);
 
-            // Ϊ�˱�֤ͼƬ�����ű��Σ�����ȡ��߱�����С���Ǹ�
             inSampleSize = widthScale < heightScale ? widthScale : heightScale;
         }
         return inSampleSize;
     }
 
     /**
-     * ���ر���ͼƬ�Ļص��ӿ�
+     * 从网络上下载图片
      * 
-     * @author xiaanming
+     * @param url
+     * @param width
+     * @param height
+     * @return
      */
-    public interface OnImageLoadListener {
-        /**
-         * �����̼߳������˱��ص�ͼƬ����Bitmap��ͼƬ·���ص��ڴ˷�����
-         * 
-         * @param bitmap
-         * @param path
-         */
-        public void onImageLoaded(ImageView imageView, Bitmap bitmap, String path);
+    private Bitmap downloadBitmap(String url, int width, int height) {
+        try {
+            Bitmap bitmap = BitmapFactory.decodeStream((InputStream) new URL(
+                    url).getContent());
+            if (width > 0 && height > 0) {
+                bitmap = Bitmap.createScaledBitmap(bitmap, width, height, true);
+            }
+            cache.put(url, bitmap);
+            return bitmap;
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

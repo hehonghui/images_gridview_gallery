@@ -5,7 +5,7 @@
     android:descendantFocusability="blocksDescendants"
     android:orientation="vertical" >
 
-    <com.image.picker.SImageView
+    <com.image.picker.SquareImageView
         android:id="@+id/imageview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
