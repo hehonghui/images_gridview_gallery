@@ -69,7 +69,7 @@ public class ImageCache {
      * @param key
      * @return
      */
-    public Bitmap get(String key) {
+    public synchronized Bitmap get(String key) {
         return mMemoryCache.get(key);
     }
 
@@ -77,8 +77,13 @@ public class ImageCache {
      * @param key
      * @return
      */
-    public void put(String key, Bitmap bmp) {
-        mMemoryCache.put(key, bmp);
+    public void put(String key, Bitmap bitmap) {
+
+        if (mMemoryCache.get(key) == null && bitmap != null) {
+            synchronized (mMemoryCache) {
+                mMemoryCache.put(key, bitmap);
+            }
+        }
     }
 
 }

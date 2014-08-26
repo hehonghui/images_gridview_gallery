@@ -33,6 +33,7 @@
 package com.image.picker;
 
 import android.content.Context;
+import android.graphics.Point;
 import android.util.AttributeSet;
 import android.widget.ImageView;
 
@@ -41,6 +42,11 @@ public class SquareImageView extends ImageView {
      * 
      */
     public OnMeasureListener mListener;
+
+    /**
+     * 记录控件的宽和高
+     */
+    private Point mPoint = new Point();
 
     public SquareImageView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
@@ -57,6 +63,15 @@ public class SquareImageView extends ImageView {
         if (mListener != null) {
             mListener.onMeasureDone(getMeasuredWidth(), getMeasuredHeight());
         }
+        mPoint.x = getMeasuredWidth();
+        mPoint.y = getMeasuredHeight();
+    }
+
+    /**
+     * @return
+     */
+    public Point getImageSize() {
+        return mPoint;
     }
 
     /**

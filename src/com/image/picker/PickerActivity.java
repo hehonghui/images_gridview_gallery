@@ -78,7 +78,7 @@ public class PickerActivity extends FragmentActivity {
 
                 @Override
                 public void onComplete(List<String> imgLists) {
-                    mGridView.setAdapter(new ImageAdapter(getActivity(), imgLists));
+                    mGridView.setAdapter(new ImageAdapter(getActivity(), imgLists, mGridView));
                 }
             }).execute();
             return rootView;

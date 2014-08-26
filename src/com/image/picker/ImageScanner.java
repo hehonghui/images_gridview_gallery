@@ -71,41 +71,6 @@ public class ImageScanner extends AsyncTask<Void, Void, List<String>> {
         return this;
     }
 
-    // @Override
-    // public void run() {
-    // if
-    // (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
-    // {
-    // Toast.makeText(mContext, "no sdcard", Toast.LENGTH_SHORT).show();
-    // return;
-    // }
-    //
-    // Uri mImageUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-    // ContentResolver mContentResolver = mContext.getContentResolver();
-    //
-    // // ֻ��ѯjpeg��png��ͼƬ
-    // Cursor mCursor = mContentResolver.query(mImageUri, null,
-    // MediaStore.Images.Media.MIME_TYPE + "=? or "
-    // + MediaStore.Images.Media.MIME_TYPE + "=?",
-    // new String[] {
-    // "image/jpeg", "image/png"
-    // }, MediaStore.Images.Media.DATE_MODIFIED);
-    //
-    // while (mCursor.moveToNext()) {
-    // // ��ȡͼƬ��·��
-    // String path = mCursor.getString(mCursor
-    // .getColumnIndex(MediaStore.Images.Media.DATA));
-    // mImages.add(path);
-    // }
-    // mCursor.close();
-    // Log.d(getName(), "#### ggggggg") ;
-    //
-    // Message msg = mHandler.obtainMessage(MSG);
-    // msg.what = MSG ;
-    // msg.obj = mImages;
-    // mHandler.sendMessage(msg);
-    // }
-
     @Override
     protected void onPreExecute() {
         if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {

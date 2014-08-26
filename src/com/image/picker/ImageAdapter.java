@@ -33,6 +33,7 @@
 package com.image.picker;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.util.Log;
@@ -44,8 +45,10 @@ import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.ImageView;
 
 import com.example.imagepicker.R;
+import com.image.picker.LocalImageLoader.ImageCallBack;
 import com.image.picker.SquareImageView.OnMeasureListener;
 
 import java.util.ArrayList;
@@ -76,13 +79,16 @@ public class ImageAdapter extends BaseAdapter {
      */
     SparseBooleanArray mCheckBoxList = new SparseBooleanArray();
 
+    View mContainer;
+
     /**
      * @param context
      * @param imgList
      */
-    public ImageAdapter(Context context, List<String> imgList) {
+    public ImageAdapter(Context context, List<String> imgList, View container) {
         mImagesList.addAll(imgList);
         Log.d("", "### 图片数量 : " + mImagesList.size());
+        mContainer = container;
         mInflater = LayoutInflater.from(context);
         UImageLoader.INSTANCE.setPlaceholder(BitmapFactory.decodeResource(
                 context.getResources(), R.drawable.ic_launcher));
@@ -142,8 +148,27 @@ public class ImageAdapter extends BaseAdapter {
         viewHolder.checkBox.setChecked(mCheckBoxList.get(position));
 
         //
-        UImageLoader.INSTANCE.displayBitmap(imagePath, viewHolder.imageView, mImageViewSize.x,
-                mImageViewSize.y);
+        // UImageLoader.INSTANCE.displayBitmap(imagePath, viewHolder.imageView,
+        // mImageViewSize.x,
+        // mImageViewSize.y);
+
+        // 利用NativeImageLoader类加载本地图片
+        Bitmap bitmap = LocalImageLoader.getInstance().displatImage(imagePath,
+                viewHolder.imageView.getImageSize(), new ImageCallBack() {
+                    @Override
+                    public void onImageLoaded(Bitmap bitmap, String path) {
+                        ImageView mImageView = (ImageView) mContainer.findViewWithTag(path);
+                        if (bitmap != null && mImageView != null) {
+                            mImageView.setImageBitmap(bitmap);
+                        }
+                    }
+                });
+
+        if (bitmap != null) {
+            viewHolder.imageView.setImageBitmap(bitmap);
+        } else {
+            viewHolder.imageView.setImageResource(R.drawable.ic_launcher);
+        }
 
         return convertView;
     }
