@@ -9,9 +9,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#000000"
-        android:columnWidth="80dp"
         android:horizontalSpacing="5dp"
-        android:numColumns="auto_fit"
+        android:numColumns="3"
         android:verticalSpacing="5dp" />
 
 </RelativeLayout>

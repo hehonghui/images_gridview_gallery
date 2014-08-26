@@ -107,7 +107,7 @@ public class ImageAdapter extends BaseAdapter {
     public View getView(final int position, View convertView, ViewGroup parent) {
         ViewHolder viewHolder = null;
         if (convertView == null) {
-            convertView = mInflater.inflate(R.layout.item, null);
+            convertView = mInflater.inflate(R.layout.gridview_item, null);
             viewHolder = new ViewHolder();
             viewHolder.imageView = (SquareImageView) convertView.findViewById(R.id.imageview);
             viewHolder.imageView.mListener = new OnMeasureListener() {
